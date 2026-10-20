@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Only trusted admin custom claim or admin collection check
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Stations collection
+    match /stations/{stationId} {
+      // Public can only read active stations
+      allow read: if resource.data.active == true || isAdmin();
+      // Only admins can create, update or delete stations
+      allow write: if isAdmin();
+    }
+
+    // Providers collection
+    match /providers/{providerId} {
+      // Public can read only published and verified providers
+      allow read: if (resource.data.published == true && resource.data.verificationStatus == 'verified') || isAdmin();
+      
+      // Only admins can create, update, or delete provider records
+      // Public users CANNOT create or update provider records directly
+      allow write: if isAdmin();
+    }
+
+    // Provider Applications collection
+    match /providerApplications/{applicationId} {
+      // Public CANNOT read or list applications (preserves privacy of phone and personal data)
+      allow read: if isAdmin();
+
+      // Public can submit an application ONLY if status is set to 'pending'
+      // and required fields are present with correct types
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.applicantName is string
+                    && request.resource.data.applicantName.size() > 1
+                    && request.resource.data.applicantName.size() < 120
+                    && request.resource.data.providerName is string
+                    && request.resource.data.providerName.size() > 1
+                    && request.resource.data.providerName.size() < 120
+                    && request.resource.data.whatsappNumber is string
+                    && request.resource.data.whatsappNumber.size() >= 10
+                    && request.resource.data.whatsappNumber.size() <= 16
+                    && request.resource.data.publicationConsent == true
+                    && request.resource.data.accuracyConfirmed == true;
+
+      // Only admins can approve, reject, or update applications
+      allow update, delete: if isAdmin();
+    }
+
+    // Reports collection
+    match /reports/{reportId} {
+      // Public cannot read reports to protect submitter and investigation data
+      allow read: if isAdmin();
+
+      // Anyone can submit a report with pending status
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.providerId is string
+                    && request.resource.data.reason is string
+                    && request.resource.data.description is string
+                    && request.resource.data.description.size() > 5;
+
+      // Only admin can update or delete reports
+      allow update, delete: if isAdmin();
+    }
+
+    // Admins collection - strictly read-only for authentication verification
+    match /admins/{adminId} {
+      allow read: if isAuthenticated() && request.auth.uid == adminId;
+      allow write: if false; // Must be managed via Firebase Console or Admin SDK
+    }
+  }
+}

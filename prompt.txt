@@ -1,0 +1,507 @@
+# Build YatraPrasadam — Prasadam Discovery Platform
+
+Act as a senior full-stack engineer and UI/UX designer. Build a production-minded, responsive website named **YatraPrasadam** that helps railway travellers find Krishna prasadam and connect with devotees, temples, and prasadam providers at railway stations.
+
+The goal is to create a better, more user-friendly alternative to RailPrasad, with additional dietary filters, provider verification, and easy WhatsApp coordination.
+
+Prioritize a beautiful, simple, mobile-first experience, minimal hosting costs, reliable functionality, and secure implementation.
+
+## 1. Start by understanding the existing project
+
+Before making changes:
+
+- Inspect the existing repository, source files, dependencies, configuration, and current application structure.
+- Identify the framework, styling system, routing, and any existing Firebase integration.
+- Reuse existing components and conventions wherever practical.
+- Do not overwrite working functionality or replace the entire project unnecessarily.
+- If the project is empty, create a React + TypeScript + Vite application.
+- If the project already uses JavaScript, continue using JavaScript unless migrating to TypeScript is clearly justified.
+- Create a short implementation plan and then proceed to implement the application. Do not stop after producing the plan.
+- Implement features in logical stages, run available checks, and fix errors before finishing.
+
+## 2. Product identity
+
+Brand name: **YatraPrasadam**
+
+Primary tagline: **Prasadam along your journey.**
+
+Supporting message: Find prasadam, connect with devotees, and travel with devotion.
+
+The platform should feel trustworthy, peaceful, welcoming, devotional, and modern.
+
+It should primarily serve railway travellers in India while remaining extensible for nationwide use.
+
+The platform must not imply that every listed provider is affiliated with ISKCON or any other organization unless that affiliation has been verified.
+
+## 3. Technology stack
+
+Prefer the following stack:
+
+- Frontend: React + Vite.
+- Language: TypeScript for a new project; preserve an existing JavaScript project where appropriate.
+- Styling: Tailwind CSS if already available or straightforward to configure. Otherwise, use the existing styling approach.
+- Routing: React Router if required.
+- Backend and database: Firebase Authentication and Cloud Firestore.
+- Hosting: Cloudflare Pages or another suitable static hosting provider.
+- Communication: WhatsApp click-to-chat links. No WhatsApp Business API integration.
+- Maps: Standard map links initially; no paid map SDK required.
+- Icons: Lucide React if available.
+- Forms: Use accessible HTML forms and existing validation libraries if available.
+
+Avoid adding large libraries without a clear need.
+
+The first release should not require a custom backend, paid train APIs, online payments, or a paid messaging service.
+
+If Firebase configuration is unavailable, build a clearly separated mock-data mode so the interface can be developed and tested. Do not silently pretend mock data is live production data.
+
+## 4. Design and user experience
+
+Create a polished, responsive interface that works well on mobile, tablet, and desktop.
+
+Visual direction:
+
+- Deep forest green as the primary brand color.
+- Warm cream or off-white backgrounds.
+- Subtle gold accents.
+- Readable typography and generous whitespace.
+- Tasteful devotional visual elements, such as a subtle lotus or journey-inspired symbol.
+- Use high-quality imagery only where it adds value.
+- Avoid excessive gradients, animations, oversized headings, cluttered cards, and generic dashboard aesthetics.
+- Use consistent spacing, typography, buttons, cards, badges, form controls, and responsive layouts.
+- Ensure accessible contrast, keyboard navigation, visible focus states, and semantic HTML.
+
+Create a simple text-based brand logo initially. Do not depend on an externally hosted image to display the logo.
+
+The website must be fast, mobile-friendly, and usable on slower connections.
+
+## 5. Homepage
+
+Create a welcoming homepage with the following sections.
+
+### Header
+
+- YatraPrasadam logo and brand name.
+- Home.
+- Find Prasadam.
+- Become a Provider.
+- About.
+- Responsive navigation menu on mobile.
+- A clear primary call to action.
+
+### Hero section
+
+Heading: "Prasadam along your journey."
+
+Supporting text: "Discover prasadam providers at railway stations and connect directly with devotees before you travel."
+
+Provide a prominent station-search interface with:
+
+- Railway station name or station code.
+- Search button.
+- Suggestions or autocomplete if practical.
+- Clear validation and helpful empty states.
+
+Allow users to search without signing in.
+
+### Dietary preferences
+
+Display dietary filters prominently near the search interface:
+
+- Krishna prasadam.
+- No onion, no garlic.
+- Jain-friendly food.
+- Sattvic food.
+- Ekadashi-friendly options.
+
+Users should be able to select multiple preferences.
+
+Important: these preferences are not interchangeable. A provider must explicitly specify which dietary criteria they meet. Do not automatically assume that food without onion and garlic is Jain-compliant or Ekadashi-compliant.
+
+### Additional homepage sections
+
+- How YatraPrasadam works: Search, choose, contact, confirm.
+- Featured or recently verified station listings, if actual data exists.
+- Become a prasadam provider.
+- A brief community-seva message.
+- Frequently asked questions.
+- Footer with About, Contact, Privacy Policy, Terms, and Report Incorrect Information.
+
+Do not display fabricated provider counts, ratings, testimonials, availability, or verification claims.
+
+## 6. Station discovery
+
+Create a station directory and station detail pages.
+
+Users must be able to:
+
+- Search by station name.
+- Search by station code.
+- Search by city or state when practical.
+- Browse matching stations.
+- Open a station page with a stable, shareable URL.
+- Filter providers by dietary preference and service availability.
+- See a useful empty state if no providers match.
+
+Example routes:
+
+- `/stations`
+- `/stations/pune`
+- `/stations/new-delhi`
+
+Use actual station records from the database. Do not hardcode a few example stations as the complete railway directory.
+
+For the initial pilot, seed a small set of explicitly labelled sample records if needed. Make it easy to add genuine stations and providers later.
+
+Implement search in a way that works with Firestore's querying capabilities. Do not assume Firestore supports arbitrary full-text search without additional infrastructure.
+
+Normalize station codes consistently and handle case-insensitive search appropriately.
+
+## 7. Provider listing cards and profiles
+
+Each public provider listing should show applicable information:
+
+- Provider or temple name.
+- Station or stations served.
+- City and state.
+- Provider type, such as temple or individual devotee.
+- Verified status, only after actual approval.
+- Dietary preferences explicitly declared by the provider.
+- Service days and service hours.
+- Advance-notice requirement.
+- Availability status.
+- Short service description.
+- WhatsApp contact button.
+- Report incorrect information action.
+
+Create provider detail pages, for example:
+
+`/providers/:providerId`
+
+The profile should clearly explain that contacting a provider does not guarantee that prasadam will be available.
+
+Do not publish a provider's phone number or personal information without their consent.
+
+Do not display private application details in public provider profiles.
+
+## 8. Dietary preference system
+
+This is a key differentiating feature.
+
+Implement structured dietary attributes rather than a single generic "vegetarian" flag.
+
+Suggested fields:
+
+- `krishnaPrasadam`
+- `noOnionGarlic`
+- `jainFriendly`
+- `sattvic`
+- `ekadashiFriendly`
+- `dietaryNotes`
+
+Use boolean values for the supported attributes and text for additional explanations.
+
+The provider must explicitly declare the attributes that apply to their food.
+
+### Jain-friendly information
+
+The provider should be able to describe relevant preparation practices and ingredients, including whether root vegetables are excluded and whether other restrictions are followed.
+
+Do not certify a provider as Jain-compliant merely because they do not use onion or garlic.
+
+Use wording such as "Jain-friendly, as declared by provider" where appropriate, and encourage travellers to confirm specific requirements directly.
+
+### Dietary filtering behavior
+
+- Allow multiple selected filters.
+- Use AND matching by default: a provider must satisfy every selected criterion.
+- Make the selected-filter state visible.
+- Allow filters to be removed individually or cleared.
+- Provide a useful message when no provider matches.
+- Never silently relax a user's dietary requirements.
+- Ensure the same filters work on station results and provider discovery pages.
+
+If the selected filters cannot be applied correctly by the database query, implement a correct, scalable approach rather than returning misleading results.
+
+## 9. WhatsApp click-to-chat
+
+WhatsApp is the only contact and coordination channel required for the MVP.
+
+Implement a reusable WhatsApp contact utility.
+
+Requirements:
+
+- Store each provider's WhatsApp number in its provider record.
+- Normalize numbers to international format without spaces or punctuation.
+- Validate the number before constructing the URL.
+- Use the standard `https://wa.me/` URL format.
+- URL-encode the prefilled message correctly.
+- Open WhatsApp through a normal user-initiated link.
+- Use safe external-link attributes where applicable.
+- Do not expose secret keys because this feature does not require any.
+- Do not claim that a request was delivered, read, accepted, or confirmed.
+
+Generate a contextual prefilled message similar to:
+
+"Hare Krishna!
+
+I found your prasadam service through YatraPrasadam.
+
+Station: [Station name]
+Train number: [Optional]
+Journey date: [Optional]
+Approximate arrival time: [Optional]
+Number of people: [Optional]
+Dietary requirements: [Selected preferences]
+
+Could you please confirm whether prasadam can be arranged?
+
+Thank you. Hare Krishna!"
+
+Where practical, allow travellers to enter the optional journey details before opening WhatsApp.
+
+Do not force users to complete a long form just to contact a provider.
+
+Keep the final confirmation between the traveller and provider in WhatsApp.
+
+## 10. Provider registration
+
+Create a public "Become a Provider" page.
+
+The form should collect:
+
+- Contact person's name.
+- Provider or temple name.
+- Provider type.
+- Email, optional if not necessary.
+- WhatsApp number.
+- Station or stations served.
+- City and state.
+- Service description.
+- Service days and hours.
+- Advance-notice requirement.
+- Dietary attributes.
+- Dietary preparation notes.
+- Consent to publish the approved provider information.
+- Confirmation that the information supplied is accurate.
+
+Requirements:
+
+- Validate inputs on the client.
+- Validate and constrain all fields through appropriate security controls.
+- Prevent duplicate submissions where practical.
+- Provide loading, success, and failure states.
+- Prevent accidental multiple submissions.
+- Store the application with `status: "pending"`.
+- Never allow a public applicant to set their own application status to approved.
+- Do not publish the provider automatically after registration.
+- Show a clear message explaining that an administrator must review the application.
+
+Add basic spam protection and reasonable abuse controls appropriate to the selected architecture.
+
+Do not collect unnecessary personal information.
+
+## 11. Admin dashboard
+
+Create an administrator dashboard for managing providers and applications.
+
+Include:
+
+- Administrator sign-in.
+- Pending applications.
+- Application details.
+- Approve and reject actions.
+- Edit approved provider profiles.
+- Suspend or unpublish providers.
+- Manage station associations.
+- Correct contact numbers and dietary attributes.
+- Review reports of incorrect information.
+- Track the date a provider was last verified.
+- Sign-out.
+
+Only authorized administrators may perform these actions.
+
+Use Firebase Authentication and an explicit authorization mechanism, such as administrator custom claims configured through a trusted environment.
+
+Do not rely on hidden UI controls, local storage, or a client-side `isAdmin` flag for security.
+
+Never allow the browser to assign its own administrator role.
+
+If secure administrator provisioning is not available, document the required setup instead of creating an insecure shortcut.
+
+## 12. Firebase data model
+
+Use Cloud Firestore with a maintainable data structure.
+
+Suggested collections:
+
+### `stations`
+
+Fields:
+
+- `name`
+- `normalizedName`
+- `code`
+- `city`
+- `state`
+- `active`
+- `createdAt`
+- `updatedAt`
+
+### `providers`
+
+Fields:
+
+- `name`
+- `providerType`
+- `description`
+- `stationIds`
+- `city`
+- `state`
+- `whatsappNumber`
+- `serviceDays`
+- `serviceHours`
+- `advanceNoticeHours`
+- `availabilityStatus`
+- `dietaryPreferences`
+- `dietaryNotes`
+- `verificationStatus`
+- `published`
+- `lastVerifiedAt`
+- `createdAt`
+- `updatedAt`
+
+### `providerApplications`
+
+Fields:
+
+- `applicantName`
+- `providerName`
+- `providerType`
+- `stationIds` or station codes
+- `city`
+- `state`
+- `whatsappNumber`
+- `serviceDetails`
+- `dietaryPreferences`
+- `dietaryNotes`
+- `publicationConsent`
+- `status`
+- `submittedAt`
+- `reviewedAt`
+- `reviewedBy`
+
+### `reports`
+
+Fields:
+
+- `providerId`
+- `reason`
+- `description`
+- `status`
+- `createdAt`
+- `resolvedAt`
+
+Use server-generated timestamps for trusted audit fields where appropriate.
+
+Use Firestore document IDs as identifiers. Do not use phone numbers as document IDs.
+
+Adapt the schema when justified, but keep private application data separate from public provider records.
+
+## 13. Security rules and privacy
+
+Treat security as a required part of the implementation, not a later enhancement.
+
+Implement and test Firestore security rules that enforce the following:
+
+- The public can read only approved, published provider records and active public station records.
+- The public cannot list or read private provider applications.
+- The public cannot read reports containing personal or operational details.
+- Public registration can create only pending applications with allowed fields and valid data types.
+- Public users cannot approve, publish, verify, suspend, or edit existing providers.
+- Only explicitly authorized administrators can approve applications, edit provider listings, manage stations, and resolve reports.
+- Users cannot grant themselves administrator privileges.
+- Private contact information from unapproved applications is not publicly accessible.
+- Updates cannot bypass the rules through modified browser requests.
+
+Prefer allowlisted fields, validation of data types and reasonable length limits.
+
+If a trusted server or Cloud Function is introduced later, validate privileged operations there as well.
+
+Do not ship open Firestore rules such as `allow read, write: if true`.
+
+Add a short privacy policy and explain what information is public, why it is collected, and how a provider can request a correction or removal.
+
+## 14. Availability and data freshness
+
+Use a controlled availability status:
+
+- `available`
+- `limited`
+- `unavailable`
+- `unknown`
+
+Explain that availability is provider-reported and should be confirmed through WhatsApp.
+
+Do not show "Available now" unless the provider's status and freshness justify that claim.
+
+Display the last verification or update date when available.
+
+Create a simple process for administrators to contact providers and confirm their listings periodically.
+
+Do not assume that a published listing guarantees that the provider will respond.
+
+## 15. Reports and quality controls
+
+Allow visitors to report:
+
+- Incorrect WhatsApp number.
+- Provider no longer active.
+- Incorrect station information.
+- Dietary information that appears inaccurate.
+- Other inappropriate or misleading listing information.
+
+Store reports privately.
+
+Give administrators a simple queue to review and resolve them.
+
+Do not expose reporter information publicly.
+
+## 16. SEO, accessibility, and performance
+
+Implement:
+
+- Page titles and meta descriptions.
+- Appropriate canonical URLs when useful.
+- Open Graph metadata for sharing.
+- A sitemap and robots configuration.
+- Semantic headings.
+- Accessible labels for inputs.
+- Keyboard-accessible navigation.
+- Useful loading, error, empty, and success states.
+- Responsive layouts for small mobile screens.
+- Image optimization and lazy loading.
+- Sensible code splitting where beneficial.
+- Error handling for Firebase failures.
+- A custom not-found page.
+
+Avoid unnecessary animation and large dependencies.
+
+Do not claim structured data or SEO metadata is valid without checking the implementation.
+
+## 17. Project structure
+
+Organize the application by feature, using a structure appropriate to the existing repository.
+
+A new project could use:
+
+`src/`
+- `components/`
+- `features/stations/`
+- `features/providers/`
+- `features/dietary/`
+- `features/applications/`
+- `features/admin/`
+- `features/reports/`
+- `pages/`
+- `layouts/`
+- `
