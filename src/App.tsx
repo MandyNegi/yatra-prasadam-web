@@ -13,6 +13,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./pages/TermsPage').then(m => ({ default: m.TermsPage })));
+const DonatePage = lazy(() => import('./pages/DonatePage').then(m => ({ default: m.DonatePage })));
 const ReportPage = lazy(() => import('./pages/ReportPage').then(m => ({ default: m.ReportPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
@@ -50,6 +51,7 @@ export const App: React.FC = () => {
               <Route path="/become-a-provider" element={<BecomeProviderPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route path="/donate" element={<DonatePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/report" element={<ReportPage />} />

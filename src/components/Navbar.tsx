@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Shield, Database } from 'lucide-react';
-import { DataService } from '../services/dataService';
+import { Menu, X, Heart } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const isMock = DataService.isMockMode();
 
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Find Prasadam', path: '/stations' },
     { name: 'Become a Provider', path: '/become-a-provider' },
     { name: 'About', path: '/about' },
+    { name: 'Support Seva', path: '/donate' },
   ];
 
   const isActive = (path: string) => {
@@ -22,32 +21,13 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-[#1b4332] text-white shadow-md">
-      {/* Mock Mode Notice Banner if running in mock environment */}
-      {isMock && (
-        <div className="bg-[#a87926] text-amber-50 text-xs px-4 py-1 text-center font-medium flex items-center justify-center gap-2">
-          <Database className="w-3.5 h-3.5" />
-          <span>
-            <strong>Mock Mode Active:</strong> Operating with local preview data. No Firebase credentials detected.
-          </span>
-          <button
-            onClick={() => {
-              if (window.confirm('Reset mock database to initial seed values?')) {
-                DataService.resetMockData();
-                window.location.reload();
-              }
-            }}
-            className="underline ml-2 hover:text-white cursor-pointer"
-            title="Reset seed data"
-          >
-            Reset Seed Data
-          </button>
-        </div>
-      )}
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Brand Logo & Name */}
-          <Link to="/" className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-[#c8963e] rounded-lg p-1">
+          <Link
+            to="/"
+            className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-[#c8963e] rounded-lg p-1"
+          >
             <div className="w-10 h-10 rounded-full bg-[#2d6a4f] border border-[#c8963e] flex items-center justify-center text-[#e9c46a] shadow-inner group-hover:scale-105 transition-transform">
               {/* Devotional Lotus Symbol (SVG) */}
               <svg
@@ -81,25 +61,17 @@ export const Navbar: React.FC = () => {
                 key={link.path}
                 to={link.path}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive(link.path)
+                  link.path === '/donate'
+                    ? 'text-[#e9c46a] hover:text-white hover:bg-[#245841] flex items-center gap-1.5'
+                    : isActive(link.path)
                     ? 'bg-[#2d6a4f] text-[#fbf9f4] font-semibold border-b-2 border-[#c8963e]'
                     : 'text-[#e2d9c8] hover:bg-[#245841] hover:text-white'
                 }`}
               >
-                {link.name}
+                {link.path === '/donate' && <Heart className="w-3.5 h-3.5 fill-[#e9c46a] text-[#e9c46a]" />}
+                <span>{link.name}</span>
               </Link>
             ))}
-
-            <Link
-              to="/admin"
-              className={`px-3 py-1.5 ml-2 text-xs font-medium rounded border border-[#2d6a4f] text-[#d4c3a3] hover:text-white hover:bg-[#245841] transition-colors flex items-center gap-1 ${
-                isActive('/admin') ? 'bg-[#2d6a4f] text-white' : ''
-              }`}
-              title="Administrator Management Portal"
-            >
-              <Shield className="w-3.5 h-3.5 text-[#c8963e]" />
-              Admin Portal
-            </Link>
 
             <Link
               to="/stations"
@@ -139,24 +111,17 @@ export const Navbar: React.FC = () => {
               to={link.path}
               onClick={() => setMobileMenuOpen(false)}
               className={`block px-3 py-2 rounded-md text-base font-medium ${
-                isActive(link.path)
+                link.path === '/donate'
+                  ? 'text-[#e9c46a] font-semibold flex items-center gap-2'
+                  : isActive(link.path)
                   ? 'bg-[#2d6a4f] text-white font-semibold'
                   : 'text-[#e2d9c8] hover:bg-[#245841] hover:text-white'
               }`}
             >
-              {link.name}
+              {link.path === '/donate' && <Heart className="w-4 h-4 fill-[#e9c46a] text-[#e9c46a]" />}
+              <span>{link.name}</span>
             </Link>
           ))}
-          <div className="pt-3 border-t border-[#2d6a4f]">
-            <Link
-              to="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-[#e2d9c8] hover:bg-[#245841]"
-            >
-              <Shield className="w-4 h-4 text-[#c8963e]" />
-              Administrator Dashboard
-            </Link>
-          </div>
         </div>
       )}
     </header>

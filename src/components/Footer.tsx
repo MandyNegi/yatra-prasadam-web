@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Heart, AlertCircle } from 'lucide-react';
+import { Heart, AlertCircle } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -61,12 +61,18 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/donate" className="hover:text-[#e9c46a] text-amber-200 transition-colors flex items-center gap-1.5 font-medium">
+                  <Heart className="w-3.5 h-3.5 fill-current" />
+                  Support Our Seva (Donate)
+                </Link>
+              </li>
+              <li>
                 <Link to="/about" className="hover:text-white transition-colors">
                   Our Seva & Guidelines
                 </Link>
               </li>
               <li>
-                <Link to="/report" className="hover:text-white transition-colors flex items-center gap-1.5 text-amber-200">
+                <Link to="/report" className="hover:text-white transition-colors flex items-center gap-1.5 text-gray-300">
                   <AlertCircle className="w-3.5 h-3.5" />
                   Report Incorrect Information
                 </Link>
@@ -74,7 +80,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Legal & Admin */}
+          {/* Legal & Governance */}
           <div>
             <h3 className="text-xs font-semibold text-[#c8963e] uppercase tracking-wider mb-4">
               Governance & Policies
@@ -91,9 +97,8 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/admin" className="hover:text-white transition-colors flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5 text-[#c8963e]" />
-                  Admin Sign-In
+                <Link to="/donate" className="hover:text-white transition-colors">
+                  Financial Transparency & Dakshina
                 </Link>
               </li>
             </ul>
@@ -103,7 +108,10 @@ export const Footer: React.FC = () => {
         <div className="border-t border-[#1b4332] mt-10 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-[#8c806d] gap-4">
           <p>
             &copy; {new Date().getFullYear()} YatraPrasadam. Independent volunteer platform.
-            Not affiliated with IRCTC, Indian Railways, or any specific organizational entity unless explicitly verified.
+            Not affiliated with IRCTC or Indian Railways.{' '}
+            <Link to="/admin" className="text-[#3b5e4f] hover:text-[#c8963e] transition-colors ml-1" title="Internal Coordinator Access">
+              [Coordinator]
+            </Link>
           </p>
           <p className="font-serif italic text-[#c8963e]">
             Hare Krishna Hare Krishna Krishna Krishna Hare Hare • Hare Rama Hare Rama Rama Rama Hare Hare
