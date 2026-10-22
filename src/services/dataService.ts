@@ -105,7 +105,15 @@ export const DataService = {
   }): Promise<Provider[]> {
     assertFirestoreReady();
 
-    const snap = await getDocs(collection(db!, 'providers'));
+    const providersQuery = query(
+      collection(db!, 'providers'),
+      where('published', '==', true),
+      where('verificationStatus', '==', 'verified')
+    );
+
+    // const snap = await getDocs(collection(db!, 'providers'));
+    const snap = await getDocs(providersQuery);
+
     let providers = snap.docs
       .map(d => ({ id: d.id, ...d.data() } as Provider))
       .filter(p => p.published && p.verificationStatus === 'verified');
