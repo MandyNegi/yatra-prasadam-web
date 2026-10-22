@@ -97,6 +97,11 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/disclaimer" className="hover:text-white transition-colors">
+                  Disclaimer & Devotional Statement
+                </Link>
+              </li>
+              <li>
                 <Link to="/donate" className="hover:text-white transition-colors">
                   Financial Transparency & Dakshina
                 </Link>
