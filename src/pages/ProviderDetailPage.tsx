@@ -4,6 +4,8 @@ import type { Provider } from '../types';
 import { DataService } from '../services/dataService';
 import { WhatsAppContactModal } from '../components/WhatsAppContactModal';
 import { ReportModal } from '../components/ReportModal';
+import { useDocumentTitle } from '../utils/seo';
+import { getGoogleMapsUrl } from '../utils/map';
 import {
   ShieldCheck,
   Clock,
@@ -15,6 +17,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   Share2,
+  ExternalLink,
 } from 'lucide-react';
 
 export const ProviderDetailPage: React.FC = () => {
@@ -24,6 +27,11 @@ export const ProviderDetailPage: React.FC = () => {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useDocumentTitle({
+    title: provider ? `${provider.name} (${provider.city})` : 'Prasadam Provider',
+    description: provider ? `${provider.description} — Stations: ${provider.stationCodes.join(', ')}` : undefined,
+  });
 
   useEffect(() => {
     async function loadProvider() {
@@ -128,6 +136,16 @@ export const ProviderDetailPage: React.FC = () => {
                   <span>
                     {provider.city}, {provider.state}
                   </span>
+                  <a
+                    href={getGoogleMapsUrl(`${provider.name}, ${provider.city}, ${provider.state}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[#e9c46a] hover:underline ml-1"
+                    title="Search location on Google Maps"
+                  >
+                    <span>(Map)</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
                 <span>•</span>
                 <div>

@@ -1,8 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../utils/seo';
 import { Train, Home, Search } from 'lucide-react';
 
 export const NotFoundPage: React.FC = () => {
+  useDocumentTitle({
+    title: '404 - Platform Not Found',
+    description: 'The requested station or page was not found on YatraPrasadam.',
+  });
   return (
     <div className="max-w-md mx-auto px-4 py-20 text-center space-y-6">
       <div className="w-16 h-16 rounded-full bg-[#f0ebd9] text-[#1b4332] flex items-center justify-center mx-auto">

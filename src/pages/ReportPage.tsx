@@ -3,8 +3,14 @@ import type { Provider, ReportReason } from '../types';
 import { DataService } from '../services/dataService';
 import { CheckCircle, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../utils/seo';
 
 export const ReportPage: React.FC = () => {
+  useDocumentTitle({
+    title: 'Report Incorrect Information',
+    description: 'Submit an issue report regarding outdated numbers or inactive prasadam services.',
+  });
+
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState('');
   const [providerNameText, setProviderNameText] = useState('');

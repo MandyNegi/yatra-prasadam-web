@@ -1,7 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../utils/seo';
 
 export const PrivacyPage: React.FC = () => {
+  useDocumentTitle({
+    title: 'Privacy Policy & Data Rights',
+    description: 'Privacy Policy for YatraPrasadam: explaining collected data, public listings, and provider rights.',
+  });
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
       <div className="space-y-2">

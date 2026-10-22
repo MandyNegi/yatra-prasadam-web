@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Station, ProviderType, DietaryPreferences } from '../types';
 import { DataService } from '../services/dataService';
 import { isValidWhatsAppNumber, normalizeWhatsAppNumber } from '../utils/whatsapp';
+import { useDocumentTitle } from '../utils/seo';
 import {
   HeartHandshake,
   CheckCircle,
@@ -11,7 +12,15 @@ import {
 } from 'lucide-react';
 
 export const BecomeProviderPage: React.FC = () => {
+  useDocumentTitle({
+    title: 'Become a Prasadam Provider',
+    description: 'Register your temple kitchen or devotee seva group to serve travelling railway devotees.',
+  });
+
   const [existingStations, setExistingStations] = useState<Station[]>([]);
+
+  // Honeypot field for spam prevention
+  const [honeypot, setHoneypot] = useState('');
 
   // Form Fields
   const [applicantName, setApplicantName] = useState('');
@@ -61,6 +70,12 @@ export const BecomeProviderPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    // Spam honeypot detection
+    if (honeypot) {
+      setSubmitted(true);
+      return;
+    }
 
     // Validation
     if (!applicantName.trim() || applicantName.trim().length < 2) {
@@ -219,6 +234,18 @@ export const BecomeProviderPage: React.FC = () => {
           onSubmit={handleSubmit}
           className="bg-white rounded-3xl border border-[#e5dec9] p-6 sm:p-10 shadow-sm space-y-8"
         >
+          {/* Honeypot hidden input */}
+          <div className="hidden" aria-hidden="true">
+            <input
+              type="text"
+              name="bot_url_trap"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
+
           {errorMessage && (
             <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />

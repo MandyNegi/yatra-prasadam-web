@@ -5,12 +5,18 @@ import { DietaryFilterBar } from '../components/DietaryFilterBar';
 import { ProviderCard } from '../components/ProviderCard';
 import type { Station, Provider, DietaryPreferences } from '../types';
 import { DataService } from '../services/dataService';
+import { useDocumentTitle } from '../utils/seo';
 import {
   HelpCircle,
   MapPin,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
+  useDocumentTitle({
+    title: 'Prasadam along your journey',
+    description: 'Find pure Krishna prasadam, connect directly with devotee kitchens, and travel with devotion across Indian Railways.',
+  });
+
   const [stations, setStations] = useState<Station[]>([]);
   const [featuredProviders, setFeaturedProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);

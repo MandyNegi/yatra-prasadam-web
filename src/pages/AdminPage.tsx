@@ -5,17 +5,28 @@ import type {
   Report,
   Station,
   AvailabilityStatus,
+  ProviderType,
+  DietaryPreferences,
 } from '../types';
 import { DataService } from '../services/dataService';
+import { useDocumentTitle } from '../utils/seo';
 import {
   Shield,
   CheckCircle,
   PlusCircle,
   LogOut,
   RefreshCw,
+  Edit,
+  X,
+  Save,
 } from 'lucide-react';
 
 export const AdminPage: React.FC = () => {
+  useDocumentTitle({
+    title: 'Admin Control Center',
+    description: 'YatraPrasadam administration portal for reviewing applications, moderating providers, and managing stations.',
+  });
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('yp_admin_authenticated') === 'true';
   });
@@ -45,6 +56,28 @@ export const AdminPage: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<ProviderApplication | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
 
+  // Provider editing modal states
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState<ProviderType>('devotee_kitchen');
+  const [editDescription, setEditDescription] = useState('');
+  const [editWhatsapp, setEditWhatsapp] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editState, setEditState] = useState('');
+  const [editAdvanceNotice, setEditAdvanceNotice] = useState(3);
+  const [editDays, setEditDays] = useState('');
+  const [editHours, setEditHours] = useState('');
+  const [editAvailability, setEditAvailability] = useState<AvailabilityStatus>('available');
+  const [editPublished, setEditPublished] = useState(true);
+  const [editDietary, setEditDietary] = useState<DietaryPreferences>({
+    krishnaPrasadam: true,
+    noOnionGarlic: true,
+    jainFriendly: false,
+    sattvic: true,
+    ekadashiFriendly: false,
+  });
+  const [editDietaryNotes, setEditDietaryNotes] = useState('');
+
   const loadAdminData = async () => {
     setLoading(true);
     try {
@@ -73,7 +106,6 @@ export const AdminPage: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default admin verification key for mock/pilot testing
     if (adminPasscode === 'admin108' || adminPasscode === 'harekrishna') {
       setIsAuthenticated(true);
       localStorage.setItem('yp_admin_authenticated', 'true');
@@ -124,6 +156,50 @@ export const AdminPage: React.FC = () => {
       lastVerifiedAt: new Date().toISOString(),
     });
     loadAdminData();
+  };
+
+  const handleOpenEdit = (provider: Provider) => {
+    setEditingProvider(provider);
+    setEditName(provider.name);
+    setEditType(provider.providerType);
+    setEditDescription(provider.description);
+    setEditWhatsapp(provider.whatsappNumber);
+    setEditCity(provider.city);
+    setEditState(provider.state);
+    setEditAdvanceNotice(provider.advanceNoticeHours);
+    setEditDays(provider.serviceDays);
+    setEditHours(provider.serviceHours);
+    setEditAvailability(provider.availabilityStatus);
+    setEditPublished(provider.published);
+    setEditDietary({ ...provider.dietaryPreferences });
+    setEditDietaryNotes(provider.dietaryNotes || '');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProvider) return;
+
+    await DataService.updateProvider(editingProvider.id, {
+      name: editName.trim(),
+      providerType: editType,
+      description: editDescription.trim(),
+      whatsappNumber: editWhatsapp.replace(/\D/g, ''),
+      city: editCity.trim(),
+      state: editState.trim(),
+      advanceNoticeHours: Number(editAdvanceNotice) || 2,
+      serviceDays: editDays.trim(),
+      serviceHours: editHours.trim(),
+      availabilityStatus: editAvailability,
+      published: editPublished,
+      dietaryPreferences: editDietary,
+      dietaryNotes: editDietaryNotes.trim(),
+      lastVerifiedAt: new Date().toISOString(),
+    });
+
+    setEditingProvider(null);
+    setActionMessage('Provider profile updated successfully.');
+    loadAdminData();
+    setTimeout(() => setActionMessage(null), 3000);
   };
 
   const handleResolveReport = async (reportId: string, status: 'resolved' | 'dismissed') => {
@@ -381,14 +457,14 @@ export const AdminPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleApproveApp(app.id)}
-                                className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-semibold"
+                                className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-semibold cursor-pointer"
                               >
                                 Approve
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRejectApp(app.id)}
-                                className="px-2.5 py-1 bg-red-700 hover:bg-red-800 text-white rounded font-semibold"
+                                className="px-2.5 py-1 bg-red-700 hover:bg-red-800 text-white rounded font-semibold cursor-pointer"
                               >
                                 Reject
                               </button>
@@ -475,20 +551,11 @@ export const AdminPage: React.FC = () => {
                       <td className="p-3 text-right">
                         <button
                           type="button"
-                          onClick={() => {
-                            const newHours = prompt(
-                              'Update advance notice hours:',
-                              prv.advanceNoticeHours.toString()
-                            );
-                            if (newHours && !isNaN(Number(newHours))) {
-                              DataService.updateProvider(prv.id, {
-                                advanceNoticeHours: Number(newHours),
-                              }).then(loadAdminData);
-                            }
-                          }}
-                          className="px-2 py-1 text-gray-600 hover:text-black border border-gray-300 rounded"
+                          onClick={() => handleOpenEdit(prv)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#1b4332] text-white rounded text-xs font-semibold hover:bg-[#245841] cursor-pointer"
                         >
-                          Edit
+                          <Edit className="w-3 h-3" />
+                          <span>Edit</span>
                         </button>
                       </td>
                     </tr>
@@ -595,14 +662,14 @@ export const AdminPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleResolveReport(rep.id, 'resolved')}
-                          className="px-3 py-1 bg-emerald-700 text-white font-semibold rounded"
+                          className="px-3 py-1 bg-emerald-700 text-white font-semibold rounded cursor-pointer"
                         >
                           Mark Resolved
                         </button>
                         <button
                           type="button"
                           onClick={() => handleResolveReport(rep.id, 'dismissed')}
-                          className="px-3 py-1 bg-gray-200 text-gray-700 font-semibold rounded"
+                          className="px-3 py-1 bg-gray-200 text-gray-700 font-semibold rounded cursor-pointer"
                         >
                           Dismiss
                         </button>
@@ -617,6 +684,240 @@ export const AdminPage: React.FC = () => {
               No reports in queue.
             </div>
           )}
+        </div>
+      )}
+
+      {/* Full Provider Edit Modal */}
+      {editingProvider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <form
+            onSubmit={handleSaveEdit}
+            className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-300 p-6 space-y-4 max-h-[90vh] overflow-y-auto text-xs"
+          >
+            <div className="flex items-center justify-between border-b pb-2">
+              <h2 className="font-bold text-gray-900 font-serif text-base flex items-center gap-2">
+                <Edit className="w-4 h-4 text-[#1b4332]" />
+                <span>Edit Provider Profile: {editingProvider.name}</span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => setEditingProvider(null)}
+                className="text-gray-400 hover:text-black p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold mb-1">Provider / Temple Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Provider Type</label>
+                <select
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value as ProviderType)}
+                  className="w-full px-3 py-2 border rounded-lg bg-white"
+                >
+                  <option value="devotee_kitchen">Devotee Seva Kitchen</option>
+                  <option value="temple">Registered Temple</option>
+                  <option value="ashram_math">Ashram / Math</option>
+                  <option value="individual_devotee">Individual Sevadar</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">WhatsApp Number (International format)</label>
+                <input
+                  type="text"
+                  required
+                  value={editWhatsapp}
+                  onChange={(e) => setEditWhatsapp(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Advance Notice (Hours)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="48"
+                  value={editAdvanceNotice}
+                  onChange={(e) => setEditAdvanceNotice(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Operating Days</label>
+                <input
+                  type="text"
+                  value={editDays}
+                  onChange={(e) => setEditDays(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Service Hours</label>
+                <input
+                  type="text"
+                  value={editHours}
+                  onChange={(e) => setEditHours(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">City</label>
+                <input
+                  type="text"
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">State</label>
+                <input
+                  type="text"
+                  value={editState}
+                  onChange={(e) => setEditState(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Service Description</label>
+              <textarea
+                rows={3}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+            </div>
+
+            {/* Dietary Checklist */}
+            <div className="bg-[#fbf9f4] p-3 rounded-xl border border-gray-200 space-y-2">
+              <label className="block font-semibold text-gray-800">Dietary Standards:</label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editDietary.krishnaPrasadam}
+                    onChange={(e) =>
+                      setEditDietary({ ...editDietary, krishnaPrasadam: e.target.checked })
+                    }
+                  />
+                  <span>Krishna Prasadam</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editDietary.noOnionGarlic}
+                    onChange={(e) =>
+                      setEditDietary({ ...editDietary, noOnionGarlic: e.target.checked })
+                    }
+                  />
+                  <span>No Onion / Garlic</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editDietary.jainFriendly}
+                    onChange={(e) =>
+                      setEditDietary({ ...editDietary, jainFriendly: e.target.checked })
+                    }
+                  />
+                  <span>Jain-Friendly</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editDietary.sattvic}
+                    onChange={(e) =>
+                      setEditDietary({ ...editDietary, sattvic: e.target.checked })
+                    }
+                  />
+                  <span>Sattvic</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editDietary.ekadashiFriendly}
+                    onChange={(e) =>
+                      setEditDietary({ ...editDietary, ekadashiFriendly: e.target.checked })
+                    }
+                  />
+                  <span>Ekadashi Vrat</span>
+                </label>
+              </div>
+
+              <div className="pt-2">
+                <label className="block font-semibold mb-1">Dietary Preparation Notes</label>
+                <input
+                  type="text"
+                  value={editDietaryNotes}
+                  onChange={(e) => setEditDietaryNotes(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={editPublished}
+                    onChange={(e) => setEditPublished(e.target.checked)}
+                  />
+                  <span>Published on Public Website</span>
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Status:</span>
+                  <select
+                    value={editAvailability}
+                    onChange={(e) => setEditAvailability(e.target.value as AvailabilityStatus)}
+                    className="px-2 py-1 border rounded bg-white"
+                  >
+                    <option value="available">Available</option>
+                    <option value="limited">Limited</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProvider(null)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#1b4332] text-white font-semibold rounded-lg hover:bg-[#245841] flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       )}
 
@@ -670,14 +971,14 @@ export const AdminPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleRejectApp(selectedApp.id)}
-                  className="px-4 py-2 bg-red-700 text-white font-semibold rounded-lg"
+                  className="px-4 py-2 bg-red-700 text-white font-semibold rounded-lg cursor-pointer"
                 >
                   Reject Application
                 </button>
                 <button
                   type="button"
                   onClick={() => handleApproveApp(selectedApp.id)}
-                  className="px-4 py-2 bg-emerald-700 text-white font-semibold rounded-lg"
+                  className="px-4 py-2 bg-emerald-700 text-white font-semibold rounded-lg cursor-pointer"
                 >
                   Approve & Publish Provider
                 </button>
@@ -769,13 +1070,13 @@ export const AdminPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowAddStation(false)}
-                className="px-3 py-2 border rounded-lg"
+                className="px-3 py-2 border rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#1b4332] text-white font-semibold rounded-lg"
+                className="px-4 py-2 bg-[#1b4332] text-white font-semibold rounded-lg cursor-pointer"
               >
                 Save Station
               </button>

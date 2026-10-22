@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { Station } from '../types';
 import { DataService } from '../services/dataService';
+import { useDocumentTitle } from '../utils/seo';
 import { Search, MapPin, Train, ArrowRight } from 'lucide-react';
 
 export const StationsPage: React.FC = () => {
+  useDocumentTitle({
+    title: 'Railway Stations Directory',
+    description: 'Browse Indian railway stations to find verified Krishna prasadam, Jain food, and sattvic meal providers.',
+  });
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 

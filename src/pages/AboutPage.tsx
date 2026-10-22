@@ -1,8 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../utils/seo';
 import { CheckCircle } from 'lucide-react';
 
 export const AboutPage: React.FC = () => {
+  useDocumentTitle({
+    title: 'About Our Seva',
+    description: 'Learn why YatraPrasadam was created to solve the challenge of pure prasadam on Indian Railways.',
+  });
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       {/* Page Header */}

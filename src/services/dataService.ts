@@ -26,10 +26,10 @@ import {
   INITIAL_REPORTS,
 } from '../data/seedData';
 
-const STATIONS_KEY = 'yp_mock_stations_v1';
-const PROVIDERS_KEY = 'yp_mock_providers_v1';
-const APPLICATIONS_KEY = 'yp_mock_applications_v1';
-const REPORTS_KEY = 'yp_mock_reports_v1';
+const STATIONS_KEY = 'yp_mock_stations_v2';
+const PROVIDERS_KEY = 'yp_mock_providers_v2';
+const APPLICATIONS_KEY = 'yp_mock_applications_v2';
+const REPORTS_KEY = 'yp_mock_reports_v2';
 
 // Initialize mock storage if not already present
 function initMockStorage(): void {

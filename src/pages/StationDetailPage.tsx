@@ -4,6 +4,8 @@ import type { Station, Provider, DietaryPreferences, AvailabilityStatus } from '
 import { DataService } from '../services/dataService';
 import { ProviderCard } from '../components/ProviderCard';
 import { DietaryFilterBar } from '../components/DietaryFilterBar';
+import { useDocumentTitle } from '../utils/seo';
+import { getStationMapUrl } from '../utils/map';
 import {
   MapPin,
   Train,
@@ -12,6 +14,7 @@ import {
   ChevronLeft,
   AlertCircle,
   PlusCircle,
+  ExternalLink,
 } from 'lucide-react';
 
 export const StationDetailPage: React.FC = () => {
@@ -20,6 +23,13 @@ export const StationDetailPage: React.FC = () => {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+
+  useDocumentTitle({
+    title: station ? `${station.name} (${station.code}) Prasadam` : 'Station Prasadam',
+    description: station
+      ? `Discover verified Krishna prasadam and sattvic food at ${station.name} (${station.code}), ${station.city}.`
+      : undefined,
+  });
 
   // Filters
   const [dietaryFilters, setDietaryFilters] = useState<DietaryPreferences>({
@@ -120,11 +130,24 @@ export const StationDetailPage: React.FC = () => {
 
           <h1 className="text-2xl sm:text-4xl font-bold font-serif">{station.name}</h1>
 
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-[#e2d9c8]">
-            <MapPin className="w-4 h-4 text-[#c8963e]" />
-            <span>
-              {station.city}, {station.state}
-            </span>
+          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-[#e2d9c8]">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-[#c8963e]" />
+              <span>
+                {station.city}, {station.state}
+              </span>
+            </div>
+            <span>•</span>
+            <a
+              href={getStationMapUrl(station.name, station.city)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[#e9c46a] hover:underline"
+              title="Open Station Location on Google Maps"
+            >
+              <span>View Station on Map</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
 
