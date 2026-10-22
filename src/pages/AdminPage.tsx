@@ -10,6 +10,9 @@ import type {
 } from '../types';
 import { DataService } from '../services/dataService';
 import { useDocumentTitle } from '../utils/seo';
+import { auth, db } from '../lib/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import {
   Shield,
   CheckCircle,
@@ -30,8 +33,49 @@ export const AdminPage: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('yp_admin_authenticated') === 'true';
   });
+  const [adminEmail, setAdminEmail] = useState('');
   const [adminPasscode, setAdminPasscode] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!auth) return;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('yp_admin_authenticated');
+        return;
+      }
+
+      if (!db) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('yp_admin_authenticated');
+        return;
+      }
+
+      try {
+        const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+        if (adminDoc.exists()) {
+          setIsAuthenticated(true);
+          localStorage.setItem('yp_admin_authenticated', 'true');
+          return;
+        }
+
+        if (auth) {
+          await signOut(auth);
+        }
+        setIsAuthenticated(false);
+        localStorage.removeItem('yp_admin_authenticated');
+        setLoginError('This account is not registered as an admin. Add its UID to the admins collection in Firestore.');
+      } catch (error) {
+        console.error('Admin auth verification failed:', error);
+        setIsAuthenticated(false);
+        localStorage.removeItem('yp_admin_authenticated');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Tab
   const [activeTab, setActiveTab] = useState<'applications' | 'providers' | 'stations' | 'reports'>('applications');
@@ -104,18 +148,44 @@ export const AdminPage: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
+
+    if (auth && db) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, adminEmail.trim(), adminPasscode);
+        const adminDoc = await getDoc(doc(db, 'admins', userCredential.user.uid));
+
+        if (!adminDoc.exists()) {
+          await signOut(auth);
+          setLoginError('This account is not registered as an admin. Add the UID to the admins collection in Firestore.');
+          return;
+        }
+
+        setIsAuthenticated(true);
+        localStorage.setItem('yp_admin_authenticated', 'true');
+        return;
+      } catch (error) {
+        console.error('Firebase admin login failed:', error);
+        setLoginError('Invalid admin email or password.');
+        return;
+      }
+    }
+
     if (adminPasscode === 'admin108' || adminPasscode === 'harekrishna') {
       setIsAuthenticated(true);
       localStorage.setItem('yp_admin_authenticated', 'true');
-      setLoginError(null);
-    } else {
-      setLoginError('Invalid administrator credentials. (Hint for reviewer: use "admin108")');
+      return;
     }
+
+    setLoginError('Invalid administrator credentials.');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth).catch(() => undefined);
+    }
     setIsAuthenticated(false);
     localStorage.removeItem('yp_admin_authenticated');
   };
@@ -129,6 +199,9 @@ export const AdminPage: React.FC = () => {
       setAdminNotes('');
       loadAdminData();
       setTimeout(() => setActionMessage(null), 3000);
+    } else {
+      setActionMessage('Approval failed. Check Firestore rules or database setup.');
+      setTimeout(() => setActionMessage(null), 4000);
     }
   };
 
@@ -141,6 +214,9 @@ export const AdminPage: React.FC = () => {
       setSelectedApp(null);
       loadAdminData();
       setTimeout(() => setActionMessage(null), 3000);
+    } else {
+      setActionMessage('Rejection failed. Check Firestore permissions or database setup.');
+      setTimeout(() => setActionMessage(null), 4000);
     }
   };
 
@@ -256,18 +332,34 @@ export const AdminPage: React.FC = () => {
 
             <div>
               <label className="block font-semibold text-gray-700 mb-1">
-                Admin Access Passcode
+                Admin Email
+              </label>
+              <input
+                type="email"
+                required
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#1b4332]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-gray-700 mb-1">
+                Admin Password / Passcode
               </label>
               <input
                 type="password"
                 required
                 value={adminPasscode}
                 onChange={(e) => setAdminPasscode(e.target.value)}
-                placeholder="Enter admin passcode (e.g. admin108)"
+                placeholder={auth && db ? 'Enter Firebase admin password' : 'Default demo passcode: admin108'}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-1 focus:ring-[#1b4332]"
               />
               <span className="text-[11px] text-gray-400 mt-1 block">
-                Default demonstration key: <code className="font-mono text-gray-700">admin108</code>
+                {auth && db
+                  ? 'Use a Firebase-authenticated admin account whose UID is present in the admins collection.'
+                  : 'Demo fallback: admin108 or harekrishna'}
               </span>
             </div>
 

@@ -59,7 +59,16 @@ export const StationDetailPage: React.FC = () => {
                 ? (availabilityFilter as AvailabilityStatus)
                 : undefined,
           });
-          setProviders(prvs);
+
+          const allProviders = await DataService.getProviders();
+          const cityFallbackProviders = allProviders.filter(
+            (provider) =>
+              provider.city.toLowerCase() === st.city.toLowerCase() &&
+              provider.state.toLowerCase() === st.state.toLowerCase() &&
+              !prvs.some((existing) => existing.id === provider.id)
+          );
+
+          setProviders([...prvs, ...cityFallbackProviders]);
         }
       } catch (err) {
         console.error('Error loading station detail', err);

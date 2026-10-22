@@ -10,7 +10,7 @@ import {
   where,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import type {
   Station,
   Provider,
@@ -31,24 +31,16 @@ const PROVIDERS_KEY = 'yp_mock_providers_v2';
 const APPLICATIONS_KEY = 'yp_mock_applications_v2';
 const REPORTS_KEY = 'yp_mock_reports_v2';
 
-// Initialize mock storage if not already present
-function initMockStorage(): void {
+// Strict Firestore mode: clear any stale mock/localStorage data and never silently use it.
+function clearMockStorage(): void {
   if (typeof window === 'undefined') return;
-  if (!localStorage.getItem(STATIONS_KEY)) {
-    localStorage.setItem(STATIONS_KEY, JSON.stringify(INITIAL_STATIONS));
-  }
-  if (!localStorage.getItem(PROVIDERS_KEY)) {
-    localStorage.setItem(PROVIDERS_KEY, JSON.stringify(INITIAL_PROVIDERS));
-  }
-  if (!localStorage.getItem(APPLICATIONS_KEY)) {
-    localStorage.setItem(APPLICATIONS_KEY, JSON.stringify(INITIAL_APPLICATIONS));
-  }
-  if (!localStorage.getItem(REPORTS_KEY)) {
-    localStorage.setItem(REPORTS_KEY, JSON.stringify(INITIAL_REPORTS));
-  }
+  localStorage.removeItem(STATIONS_KEY);
+  localStorage.removeItem(PROVIDERS_KEY);
+  localStorage.removeItem(APPLICATIONS_KEY);
+  localStorage.removeItem(REPORTS_KEY);
 }
 
-initMockStorage();
+clearMockStorage();
 
 function getMockItem<T>(key: string, defaultVal: T): T {
   try {
@@ -68,9 +60,37 @@ function setMockItem<T>(key: string, value: T): void {
   }
 }
 
+async function runWithFirestoreTimeout<T>(
+  operation: () => Promise<T>,
+  timeoutMs = 8000
+): Promise<T> {
+  if (!db) {
+    throw new Error('Firestore is not initialized. App is running in strict Firestore mode.');
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    const result = await Promise.race([
+      operation(),
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error('Firestore request timed out'));
+        }, timeoutMs);
+      }),
+    ]);
+    return result;
+  } catch (error) {
+    console.error('Firestore operation failed in strict Firestore mode:', error);
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export const DataService = {
   isMockMode(): boolean {
-    return !isFirebaseConfigured || !db;
+    return false;
   },
 
   resetMockData(): void {
@@ -142,13 +162,10 @@ export const DataService = {
 
     if (!this.isMockMode() && db) {
       try {
-        const q = query(
-          collection(db, 'providers'),
-          where('published', '==', true),
-          where('verificationStatus', '==', 'verified')
-        );
-        const snap = await getDocs(q);
-        providers = snap.docs.map(d => ({ id: d.id, ...d.data() } as Provider));
+        const snap = await getDocs(collection(db, 'providers'));
+        providers = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Provider))
+          .filter(p => p.published && p.verificationStatus === 'verified');
       } catch (e) {
         console.warn('Firestore fetch failed, falling back to mock storage', e);
         providers = getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS).filter(
@@ -161,15 +178,22 @@ export const DataService = {
       );
     }
 
-    // Filter by station
-    if (filters?.stationId) {
-      providers = providers.filter(
-        p =>
-          p.stationIds.includes(filters.stationId!) ||
-          (filters.stationCode && p.stationCodes.includes(filters.stationCode))
-      );
-    } else if (filters?.stationCode) {
-      providers = providers.filter(p => p.stationCodes.includes(filters.stationCode!));
+    // Filter by station with case-insensitive matching for IDs and codes
+    const targetStationId = filters?.stationId?.toLowerCase().trim();
+    const targetStationCode = filters?.stationCode?.toLowerCase().trim();
+
+    if (targetStationId || targetStationCode) {
+      providers = providers.filter((p) => {
+        const stationIds = (p.stationIds || []).map(v => String(v).toLowerCase());
+        const stationCodes = (p.stationCodes || []).map(v => String(v).toLowerCase());
+        const stationNames = (p.stationNames || []).map(v => String(v).toLowerCase());
+
+        return (
+          (!targetStationId || stationIds.includes(targetStationId)) ||
+          (!targetStationCode || stationCodes.includes(targetStationCode)) ||
+          (!targetStationCode || stationNames.includes(targetStationCode))
+        );
+      });
     }
 
     // Filter by availability
@@ -219,22 +243,17 @@ export const DataService = {
       submittedAt: new Date().toISOString(),
     };
 
-    if (!this.isMockMode() && db) {
-      try {
+    const firestoreWrite = async (): Promise<{ success: boolean; id: string }> => {
+      if (!this.isMockMode() && db) {
         await setDoc(doc(db, 'providerApplications', id), {
           ...application,
           submittedAt: serverTimestamp(),
         });
-        return { success: true, id };
-      } catch (e) {
-        console.warn('Firestore save failed, falling back to mock storage', e);
       }
-    }
+      return { success: true, id };
+    };
 
-    const apps = getMockItem<ProviderApplication[]>(APPLICATIONS_KEY, INITIAL_APPLICATIONS);
-    apps.unshift(application);
-    setMockItem(APPLICATIONS_KEY, apps);
-    return { success: true, id };
+    return await runWithFirestoreTimeout(firestoreWrite, 8000);
   },
 
   async submitReport(
@@ -283,6 +302,52 @@ export const DataService = {
     applicationId: string,
     adminNotes?: string
   ): Promise<{ success: boolean }> {
+    if (!this.isMockMode() && db) {
+      try {
+        const appSnap = await getDoc(doc(db, 'providerApplications', applicationId));
+        if (!appSnap.exists()) {
+          return { success: false };
+        }
+
+        const targetApp = { id: appSnap.id, ...appSnap.data() } as ProviderApplication;
+
+        const newProvider: Provider = {
+          id: `pr-${Date.now()}`,
+          name: targetApp.providerName,
+          providerType: targetApp.providerType,
+          description: targetApp.serviceDetails,
+          stationIds: targetApp.stationIds,
+          stationCodes: targetApp.stationCodes,
+          city: targetApp.city,
+          state: targetApp.state,
+          whatsappNumber: targetApp.whatsappNumber,
+          serviceDays: targetApp.serviceDays || 'Daily',
+          serviceHours: targetApp.serviceHours || '08:00 AM - 08:00 PM',
+          advanceNoticeHours: targetApp.advanceNoticeHours || 3,
+          availabilityStatus: 'available',
+          dietaryPreferences: targetApp.dietaryPreferences,
+          dietaryNotes: targetApp.dietaryNotes,
+          verificationStatus: 'verified',
+          published: true,
+          lastVerifiedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        await updateDoc(doc(db, 'providerApplications', applicationId), {
+          status: 'approved',
+          reviewedAt: serverTimestamp(),
+          reviewedBy: 'admin',
+          adminNotes: adminNotes || '',
+        });
+        await setDoc(doc(db, 'providers', newProvider.id), newProvider);
+        return { success: true };
+      } catch (e) {
+        console.warn('Firestore approve failed', e);
+        return { success: false };
+      }
+    }
+
     const apps = getMockItem<ProviderApplication[]>(APPLICATIONS_KEY, INITIAL_APPLICATIONS);
     const appIndex = apps.findIndex(a => a.id === applicationId);
     if (appIndex === -1) return { success: false };
@@ -295,7 +360,6 @@ export const DataService = {
     apps[appIndex] = targetApp;
     setMockItem(APPLICATIONS_KEY, apps);
 
-    // Promote to published Provider
     const newProvider: Provider = {
       id: `pr-${Date.now()}`,
       name: targetApp.providerName,
@@ -323,20 +387,6 @@ export const DataService = {
     providers.unshift(newProvider);
     setMockItem(PROVIDERS_KEY, providers);
 
-    if (!this.isMockMode() && db) {
-      try {
-        await updateDoc(doc(db, 'providerApplications', applicationId), {
-          status: 'approved',
-          reviewedAt: serverTimestamp(),
-          reviewedBy: 'admin',
-          adminNotes: adminNotes || '',
-        });
-        await setDoc(doc(db, 'providers', newProvider.id), newProvider);
-      } catch (e) {
-        console.warn('Firestore approve failed', e);
-      }
-    }
-
     return { success: true };
   },
 
@@ -344,6 +394,26 @@ export const DataService = {
     applicationId: string,
     adminNotes?: string
   ): Promise<{ success: boolean }> {
+    if (!this.isMockMode() && db) {
+      try {
+        const appSnap = await getDoc(doc(db, 'providerApplications', applicationId));
+        if (!appSnap.exists()) {
+          return { success: false };
+        }
+
+        await updateDoc(doc(db, 'providerApplications', applicationId), {
+          status: 'rejected',
+          reviewedAt: serverTimestamp(),
+          reviewedBy: 'admin',
+          adminNotes: adminNotes || '',
+        });
+        return { success: true };
+      } catch (e) {
+        console.warn('Firestore reject failed', e);
+        return { success: false };
+      }
+    }
+
     const apps = getMockItem<ProviderApplication[]>(APPLICATIONS_KEY, INITIAL_APPLICATIONS);
     const appIndex = apps.findIndex(a => a.id === applicationId);
     if (appIndex === -1) return { success: false };
@@ -353,18 +423,6 @@ export const DataService = {
     apps[appIndex].reviewedBy = 'Administrator';
     apps[appIndex].adminNotes = adminNotes;
     setMockItem(APPLICATIONS_KEY, apps);
-
-    if (!this.isMockMode() && db) {
-      try {
-        await updateDoc(doc(db, 'providerApplications', applicationId), {
-          status: 'rejected',
-          reviewedAt: serverTimestamp(),
-          adminNotes: adminNotes || '',
-        });
-      } catch (e) {
-        console.warn('Firestore reject failed', e);
-      }
-    }
 
     return { success: true };
   },

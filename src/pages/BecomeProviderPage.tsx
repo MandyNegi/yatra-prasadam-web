@@ -56,7 +56,7 @@ export const BecomeProviderPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    DataService.getStations().then(setExistingStations);
+    DataService.getAllStations().then(setExistingStations);
   }, []);
 
   const handleStationToggle = (code: string) => {
@@ -135,17 +135,28 @@ export const BecomeProviderPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Find matching station IDs if available
+      const normalizedStationCodes = stationsCombined.map((code) => code.trim().toUpperCase());
       const matchedStationIds = existingStations
-        .filter((st) => stationsCombined.includes(st.code))
+        .filter((st) => {
+          const stationCode = st.code?.trim().toUpperCase();
+          const stationName = st.name?.trim().toUpperCase();
+          const cityMatch = st.city?.trim().toLowerCase() === city.trim().toLowerCase();
+          const stateMatch = st.state?.trim().toLowerCase() === state.trim().toLowerCase();
+
+          return (
+            normalizedStationCodes.includes(stationCode) ||
+            normalizedStationCodes.includes(stationName) ||
+            (cityMatch && stateMatch)
+          );
+        })
         .map((st) => st.id);
 
       await DataService.submitProviderApplication({
         applicantName: applicantName.trim(),
         providerName: providerName.trim(),
         providerType,
-        stationIds: matchedStationIds,
-        stationCodes: stationsCombined,
+        stationIds: Array.from(new Set(matchedStationIds)),
+        stationCodes: Array.from(new Set(normalizedStationCodes)),
         city: city.trim(),
         state: state.trim(),
         whatsappNumber: normalizedPhone,

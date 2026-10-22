@@ -32,9 +32,25 @@ export const StationsPage: React.FC = () => {
         // Calculate count of verified providers for each station
         const counts: Record<string, number> = {};
         allStations.forEach((s) => {
-          counts[s.id] = allProviders.filter(
-            (p) => p.stationIds.includes(s.id) || p.stationCodes.includes(s.code)
-          ).length;
+          const stationId = s.id.toLowerCase();
+          const stationCode = s.code.toLowerCase();
+          const stationCity = s.city.toLowerCase();
+          const stationState = s.state.toLowerCase();
+
+          counts[s.id] = allProviders.filter((p) => {
+            const stationIds = (p.stationIds || []).map((id) => String(id).toLowerCase());
+            const stationCodes = (p.stationCodes || []).map((code) => String(code).toLowerCase());
+            const stationNames = (p.stationNames || []).map((name) => String(name).toLowerCase());
+            const sameCityState =
+              p.city.toLowerCase() === stationCity && p.state.toLowerCase() === stationState;
+
+            return (
+              stationIds.includes(stationId) ||
+              stationCodes.includes(stationCode) ||
+              stationNames.includes(s.name.toLowerCase()) ||
+              sameCityState
+            );
+          }).length;
         });
 
         setStations(allStations);
