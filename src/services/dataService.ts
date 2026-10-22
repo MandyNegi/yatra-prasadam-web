@@ -19,44 +19,10 @@ import type {
   DietaryPreferences,
   AvailabilityStatus,
 } from '../types';
-import {
-  INITIAL_STATIONS,
-  INITIAL_PROVIDERS,
-  INITIAL_APPLICATIONS,
-  INITIAL_REPORTS,
-} from '../data/seedData';
 
-const STATIONS_KEY = 'yp_mock_stations_v2';
-const PROVIDERS_KEY = 'yp_mock_providers_v2';
-const APPLICATIONS_KEY = 'yp_mock_applications_v2';
-const REPORTS_KEY = 'yp_mock_reports_v2';
-
-// Strict Firestore mode: clear any stale mock/localStorage data and never silently use it.
-function clearMockStorage(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STATIONS_KEY);
-  localStorage.removeItem(PROVIDERS_KEY);
-  localStorage.removeItem(APPLICATIONS_KEY);
-  localStorage.removeItem(REPORTS_KEY);
-}
-
-clearMockStorage();
-
-function getMockItem<T>(key: string, defaultVal: T): T {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultVal;
-  } catch (err) {
-    console.error('Error reading from localStorage', err);
-    return defaultVal;
-  }
-}
-
-function setMockItem<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    console.error('Error writing to localStorage', err);
+function assertFirestoreReady(): void {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please add your Firebase env vars and redeploy.');
   }
 }
 
@@ -64,9 +30,7 @@ async function runWithFirestoreTimeout<T>(
   operation: () => Promise<T>,
   timeoutMs = 8000
 ): Promise<T> {
-  if (!db) {
-    throw new Error('Firestore is not initialized. App is running in strict Firestore mode.');
-  }
+  assertFirestoreReady();
 
   let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -93,36 +57,17 @@ export const DataService = {
     return false;
   },
 
-  resetMockData(): void {
-    localStorage.setItem(STATIONS_KEY, JSON.stringify(INITIAL_STATIONS));
-    localStorage.setItem(PROVIDERS_KEY, JSON.stringify(INITIAL_PROVIDERS));
-    localStorage.setItem(APPLICATIONS_KEY, JSON.stringify(INITIAL_APPLICATIONS));
-    localStorage.setItem(REPORTS_KEY, JSON.stringify(INITIAL_REPORTS));
-  },
-
   async getStations(): Promise<Station[]> {
-    if (!this.isMockMode() && db) {
-      try {
-        const q = query(collection(db, 'stations'), where('active', '==', true));
-        const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Station));
-      } catch (e) {
-        console.warn('Firestore fetch failed, falling back to mock storage', e);
-      }
-    }
-    return getMockItem<Station[]>(STATIONS_KEY, INITIAL_STATIONS).filter(s => s.active);
+    assertFirestoreReady();
+    const q = query(collection(db!, 'stations'), where('active', '==', true));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Station));
   },
 
   async getAllStations(): Promise<Station[]> {
-    if (!this.isMockMode() && db) {
-      try {
-        const snap = await getDocs(collection(db, 'stations'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Station));
-      } catch (e) {
-        console.warn('Firestore fetch failed, falling back to mock storage', e);
-      }
-    }
-    return getMockItem<Station[]>(STATIONS_KEY, INITIAL_STATIONS);
+    assertFirestoreReady();
+    const snap = await getDocs(collection(db!, 'stations'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Station));
   },
 
   async getStationBySlug(slugOrCode: string): Promise<Station | null> {
@@ -158,27 +103,13 @@ export const DataService = {
     dietary?: Partial<DietaryPreferences>;
     availability?: AvailabilityStatus;
   }): Promise<Provider[]> {
-    let providers: Provider[] = [];
+    assertFirestoreReady();
 
-    if (!this.isMockMode() && db) {
-      try {
-        const snap = await getDocs(collection(db, 'providers'));
-        providers = snap.docs
-          .map(d => ({ id: d.id, ...d.data() } as Provider))
-          .filter(p => p.published && p.verificationStatus === 'verified');
-      } catch (e) {
-        console.warn('Firestore fetch failed, falling back to mock storage', e);
-        providers = getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS).filter(
-          p => p.published && p.verificationStatus === 'verified'
-        );
-      }
-    } else {
-      providers = getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS).filter(
-        p => p.published && p.verificationStatus === 'verified'
-      );
-    }
+    const snap = await getDocs(collection(db!, 'providers'));
+    let providers = snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as Provider))
+      .filter(p => p.published && p.verificationStatus === 'verified');
 
-    // Filter by station with case-insensitive matching for IDs and codes
     const targetStationId = filters?.stationId?.toLowerCase().trim();
     const targetStationCode = filters?.stationCode?.toLowerCase().trim();
 
@@ -196,21 +127,19 @@ export const DataService = {
       });
     }
 
-    // Filter by availability
     if (filters?.availability) {
       providers = providers.filter(p => p.availabilityStatus === filters.availability);
     }
 
-    // Filter by dietary preferences (Strict AND matching)
     if (filters?.dietary) {
       const activeKeys = (Object.keys(filters.dietary) as (keyof DietaryPreferences)[]).filter(
         k => filters.dietary![k] === true
       );
 
       if (activeKeys.length > 0) {
-        providers = providers.filter(p => {
-          return activeKeys.every(k => p.dietaryPreferences && p.dietaryPreferences[k] === true);
-        });
+        providers = providers.filter(p =>
+          activeKeys.every(k => p.dietaryPreferences && p.dietaryPreferences[k] === true)
+        );
       }
     }
 
@@ -218,23 +147,17 @@ export const DataService = {
   },
 
   async getProviderById(id: string): Promise<Provider | null> {
-    if (!this.isMockMode() && db) {
-      try {
-        const snap = await getDoc(doc(db, 'providers', id));
-        if (snap.exists()) {
-          return { id: snap.id, ...snap.data() } as Provider;
-        }
-      } catch (e) {
-        console.warn('Firestore fetch failed', e);
-      }
-    }
-    const providers = getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS);
-    return providers.find(p => p.id === id) || null;
+    assertFirestoreReady();
+    const snap = await getDoc(doc(db!, 'providers', id));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as Provider;
   },
 
   async submitProviderApplication(
     data: Omit<ProviderApplication, 'id' | 'status' | 'submittedAt'>
   ): Promise<{ success: boolean; id: string }> {
+    assertFirestoreReady();
+
     const id = `app-${Date.now()}`;
     const application: ProviderApplication = {
       ...data,
@@ -243,22 +166,21 @@ export const DataService = {
       submittedAt: new Date().toISOString(),
     };
 
-    const firestoreWrite = async (): Promise<{ success: boolean; id: string }> => {
-      if (!this.isMockMode() && db) {
-        await setDoc(doc(db, 'providerApplications', id), {
-          ...application,
-          submittedAt: serverTimestamp(),
-        });
-      }
-      return { success: true, id };
-    };
+    await runWithFirestoreTimeout(async () => {
+      await setDoc(doc(db!, 'providerApplications', id), {
+        ...application,
+        submittedAt: serverTimestamp(),
+      });
+    });
 
-    return await runWithFirestoreTimeout(firestoreWrite, 8000);
+    return { success: true, id };
   },
 
   async submitReport(
     data: Omit<Report, 'id' | 'status' | 'createdAt'>
   ): Promise<{ success: boolean; id: string }> {
+    assertFirestoreReady();
+
     const id = `rep-${Date.now()}`;
     const report: Report = {
       ...data,
@@ -267,99 +189,30 @@ export const DataService = {
       createdAt: new Date().toISOString(),
     };
 
-    if (!this.isMockMode() && db) {
-      try {
-        await addDoc(collection(db, 'reports'), {
-          ...report,
-          createdAt: serverTimestamp(),
-        });
-        return { success: true, id };
-      } catch (e) {
-        console.warn('Firestore report save failed', e);
-      }
-    }
+    await addDoc(collection(db!, 'reports'), {
+      ...report,
+      createdAt: serverTimestamp(),
+    });
 
-    const reports = getMockItem<Report[]>(REPORTS_KEY, INITIAL_REPORTS);
-    reports.unshift(report);
-    setMockItem(REPORTS_KEY, reports);
     return { success: true, id };
   },
 
-  // ADMIN METHODS
   async getApplications(): Promise<ProviderApplication[]> {
-    if (!this.isMockMode() && db) {
-      try {
-        const snap = await getDocs(collection(db, 'providerApplications'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as ProviderApplication));
-      } catch (e) {
-        console.warn('Firestore fetch failed', e);
-      }
-    }
-    return getMockItem<ProviderApplication[]>(APPLICATIONS_KEY, INITIAL_APPLICATIONS);
+    assertFirestoreReady();
+    const snap = await getDocs(collection(db!, 'providerApplications'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as ProviderApplication));
   },
 
   async approveApplication(
     applicationId: string,
     adminNotes?: string
   ): Promise<{ success: boolean }> {
-    if (!this.isMockMode() && db) {
-      try {
-        const appSnap = await getDoc(doc(db, 'providerApplications', applicationId));
-        if (!appSnap.exists()) {
-          return { success: false };
-        }
+    assertFirestoreReady();
 
-        const targetApp = { id: appSnap.id, ...appSnap.data() } as ProviderApplication;
+    const appSnap = await getDoc(doc(db!, 'providerApplications', applicationId));
+    if (!appSnap.exists()) return { success: false };
 
-        const newProvider: Provider = {
-          id: `pr-${Date.now()}`,
-          name: targetApp.providerName,
-          providerType: targetApp.providerType,
-          description: targetApp.serviceDetails,
-          stationIds: targetApp.stationIds,
-          stationCodes: targetApp.stationCodes,
-          city: targetApp.city,
-          state: targetApp.state,
-          whatsappNumber: targetApp.whatsappNumber,
-          serviceDays: targetApp.serviceDays || 'Daily',
-          serviceHours: targetApp.serviceHours || '08:00 AM - 08:00 PM',
-          advanceNoticeHours: targetApp.advanceNoticeHours || 3,
-          availabilityStatus: 'available',
-          dietaryPreferences: targetApp.dietaryPreferences,
-          dietaryNotes: targetApp.dietaryNotes,
-          verificationStatus: 'verified',
-          published: true,
-          lastVerifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        await updateDoc(doc(db, 'providerApplications', applicationId), {
-          status: 'approved',
-          reviewedAt: serverTimestamp(),
-          reviewedBy: 'admin',
-          adminNotes: adminNotes || '',
-        });
-        await setDoc(doc(db, 'providers', newProvider.id), newProvider);
-        return { success: true };
-      } catch (e) {
-        console.warn('Firestore approve failed', e);
-        return { success: false };
-      }
-    }
-
-    const apps = getMockItem<ProviderApplication[]>(APPLICATIONS_KEY, INITIAL_APPLICATIONS);
-    const appIndex = apps.findIndex(a => a.id === applicationId);
-    if (appIndex === -1) return { success: false };
-
-    const targetApp = apps[appIndex];
-    targetApp.status = 'approved';
-    targetApp.reviewedAt = new Date().toISOString();
-    targetApp.reviewedBy = 'Administrator';
-    targetApp.adminNotes = adminNotes;
-    apps[appIndex] = targetApp;
-    setMockItem(APPLICATIONS_KEY, apps);
-
+    const targetApp = { id: appSnap.id, ...appSnap.data() } as ProviderApplication;
     const newProvider: Provider = {
       id: `pr-${Date.now()}`,
       name: targetApp.providerName,
@@ -383,10 +236,13 @@ export const DataService = {
       updatedAt: new Date().toISOString(),
     };
 
-    const providers = getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS);
-    providers.unshift(newProvider);
-    setMockItem(PROVIDERS_KEY, providers);
-
+    await updateDoc(doc(db!, 'providerApplications', applicationId), {
+      status: 'approved',
+      reviewedAt: serverTimestamp(),
+      reviewedBy: 'admin',
+      adminNotes: adminNotes || '',
+    });
+    await setDoc(doc(db!, 'providers', newProvider.id), newProvider);
     return { success: true };
   },
 
@@ -394,111 +250,53 @@ export const DataService = {
     applicationId: string,
     adminNotes?: string
   ): Promise<{ success: boolean }> {
-    if (!this.isMockMode() && db) {
-      try {
-        const appSnap = await getDoc(doc(db, 'providerApplications', applicationId));
-        if (!appSnap.exists()) {
-          return { success: false };
-        }
+    assertFirestoreReady();
 
-        await updateDoc(doc(db, 'providerApplications', applicationId), {
-          status: 'rejected',
-          reviewedAt: serverTimestamp(),
-          reviewedBy: 'admin',
-          adminNotes: adminNotes || '',
-        });
-        return { success: true };
-      } catch (e) {
-        console.warn('Firestore reject failed', e);
-        return { success: false };
-      }
-    }
+    const appSnap = await getDoc(doc(db!, 'providerApplications', applicationId));
+    if (!appSnap.exists()) return { success: false };
 
-    const apps = getMockItem<ProviderApplication[]>(APPLICATIONS_KEY, INITIAL_APPLICATIONS);
-    const appIndex = apps.findIndex(a => a.id === applicationId);
-    if (appIndex === -1) return { success: false };
-
-    apps[appIndex].status = 'rejected';
-    apps[appIndex].reviewedAt = new Date().toISOString();
-    apps[appIndex].reviewedBy = 'Administrator';
-    apps[appIndex].adminNotes = adminNotes;
-    setMockItem(APPLICATIONS_KEY, apps);
-
+    await updateDoc(doc(db!, 'providerApplications', applicationId), {
+      status: 'rejected',
+      reviewedAt: serverTimestamp(),
+      reviewedBy: 'admin',
+      adminNotes: adminNotes || '',
+    });
     return { success: true };
   },
 
   async getAllProvidersAdmin(): Promise<Provider[]> {
-    if (!this.isMockMode() && db) {
-      try {
-        const snap = await getDocs(collection(db, 'providers'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Provider));
-      } catch (e) {
-        console.warn('Firestore fetch failed', e);
-      }
-    }
-    return getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS);
+    assertFirestoreReady();
+    const snap = await getDocs(collection(db!, 'providers'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Provider));
   },
 
   async updateProvider(id: string, updates: Partial<Provider>): Promise<boolean> {
-    const providers = getMockItem<Provider[]>(PROVIDERS_KEY, INITIAL_PROVIDERS);
-    const index = providers.findIndex(p => p.id === id);
-    if (index === -1) return false;
-
-    providers[index] = {
-      ...providers[index],
+    assertFirestoreReady();
+    await updateDoc(doc(db!, 'providers', id), {
       ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    setMockItem(PROVIDERS_KEY, providers);
-
-    if (!this.isMockMode() && db) {
-      try {
-        await updateDoc(doc(db, 'providers', id), {
-          ...updates,
-          updatedAt: serverTimestamp(),
-        });
-      } catch (e) {
-        console.warn('Firestore provider update failed', e);
-      }
-    }
+      updatedAt: serverTimestamp(),
+    });
     return true;
   },
 
   async getReports(): Promise<Report[]> {
-    if (!this.isMockMode() && db) {
-      try {
-        const snap = await getDocs(collection(db, 'reports'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Report));
-      } catch (e) {
-        console.warn('Firestore reports fetch failed', e);
-      }
-    }
-    return getMockItem<Report[]>(REPORTS_KEY, INITIAL_REPORTS);
+    assertFirestoreReady();
+    const snap = await getDocs(collection(db!, 'reports'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Report));
   },
 
   async resolveReport(reportId: string, status: 'resolved' | 'dismissed'): Promise<boolean> {
-    const reports = getMockItem<Report[]>(REPORTS_KEY, INITIAL_REPORTS);
-    const idx = reports.findIndex(r => r.id === reportId);
-    if (idx === -1) return false;
-
-    reports[idx].status = status;
-    reports[idx].resolvedAt = new Date().toISOString();
-    setMockItem(REPORTS_KEY, reports);
-
-    if (!this.isMockMode() && db) {
-      try {
-        await updateDoc(doc(db, 'reports', reportId), {
-          status,
-          resolvedAt: serverTimestamp(),
-        });
-      } catch (e) {
-        console.warn('Firestore report update failed', e);
-      }
-    }
+    assertFirestoreReady();
+    await updateDoc(doc(db!, 'reports', reportId), {
+      status,
+      resolvedAt: serverTimestamp(),
+    });
     return true;
   },
 
   async addStation(data: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Promise<Station> {
+    assertFirestoreReady();
+
     const id = `st-${data.code.toLowerCase()}`;
     const newStation: Station = {
       ...data,
@@ -507,17 +305,7 @@ export const DataService = {
       updatedAt: new Date().toISOString(),
     };
 
-    const stations = getMockItem<Station[]>(STATIONS_KEY, INITIAL_STATIONS);
-    stations.push(newStation);
-    setMockItem(STATIONS_KEY, stations);
-
-    if (!this.isMockMode() && db) {
-      try {
-        await setDoc(doc(db, 'stations', id), newStation);
-      } catch (e) {
-        console.warn('Firestore add station failed', e);
-      }
-    }
+    await setDoc(doc(db!, 'stations', id), newStation);
     return newStation;
   },
 };
