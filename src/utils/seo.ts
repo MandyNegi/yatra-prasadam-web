@@ -8,7 +8,17 @@ interface SEOProps {
 export function useDocumentTitle({ title, description }: SEOProps): void {
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = title ? `${title} | YatraPrasadam` : 'YatraPrasadam — Prasadam along your journey';
+    const fullTitle = title ? `${title} | YatraPrasadam` : 'YatraPrasadam — Prasadam on train & food on rail in India';
+    document.title = fullTitle;
+
+    const canonicalUrl = 'https://www.yatraprasadam.in/' + window.location.pathname;
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
 
     if (description) {
       let metaDesc = document.querySelector('meta[name="description"]');

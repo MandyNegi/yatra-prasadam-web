@@ -1,77 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://yatraprasadam.org/</loc>
+    <loc>https://www.yatraprasadam.in/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations</loc>
+    <loc>https://www.yatraprasadam.in/stations</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/pune</loc>
+    <loc>https://www.yatraprasadam.in/stations/pune</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/new-delhi</loc>
+    <loc>https://www.yatraprasadam.in/stations/new-delhi</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/mathura</loc>
+    <loc>https://www.yatraprasadam.in/stations/mathura</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/varanasi</loc>
+    <loc>https://www.yatraprasadam.in/stations/varanasi</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/puri</loc>
+    <loc>https://www.yatraprasadam.in/stations/puri</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/ayodhya</loc>
+    <loc>https://www.yatraprasadam.in/stations/ayodhya</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/tirupati</loc>
+    <loc>https://www.yatraprasadam.in/stations/tirupati</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/stations/ahmedabad</loc>
+    <loc>https://www.yatraprasadam.in/stations/ahmedabad</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/become-a-provider</loc>
+    <loc>https://www.yatraprasadam.in/become-a-provider</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/donate</loc>
+    <loc>https://www.yatraprasadam.in/donate</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/about</loc>
+    <loc>https://www.yatraprasadam.in/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/privacy</loc>
+    <loc>https://www.yatraprasadam.in/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://yatraprasadam.org/terms</loc>
+    <loc>https://www.yatraprasadam.in/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
