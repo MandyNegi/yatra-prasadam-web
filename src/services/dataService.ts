@@ -116,7 +116,9 @@ export const DataService = {
 
     let providers = snap.docs
       .map(d => ({ id: d.id, ...d.data() } as Provider))
-      .filter(p => p.published && p.verificationStatus === 'verified');
+      .filter(
+        p => p.published && p.verificationStatus === 'verified' && p.availabilityStatus !== 'unavailable'
+      );
 
     const targetStationId = filters?.stationId?.toLowerCase().trim();
     const targetStationCode = filters?.stationCode?.toLowerCase().trim();
