@@ -87,12 +87,12 @@ export const HomePage: React.FC = () => {
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold font-serif tracking-tight text-white drop-shadow-xs">
-            Prasadam along your journey.
+            YatraPrasadam — Prasadam on Train & Food on Rail in India
           </h1>
 
           <p className="text-base sm:text-xl text-[#e2d9c8] max-w-2xl mx-auto font-light leading-relaxed">
-            Discover prasadam providers at railway stations and connect directly with devotees
-            before you travel.
+            Discover verified prasadam on train, rail food, and devotional food near Indian railway stations.
+            Find pure Krishna prasadam and railway station food along your journey with YatraPrasadam.
           </p>
 
           {/* Prominent Station Search Interface */}
