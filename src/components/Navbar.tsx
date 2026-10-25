@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Heart } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -11,7 +11,6 @@ export const Navbar: React.FC = () => {
     { name: 'Find Prasadam', path: '/stations' },
     { name: 'Become a Provider', path: '/become-a-provider' },
     { name: 'About', path: '/about' },
-    { name: 'Support Seva', path: '/donate' },
   ];
 
   const isActive = (path: string) => {
@@ -61,14 +60,11 @@ export const Navbar: React.FC = () => {
                 key={link.path}
                 to={link.path}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  link.path === '/donate'
-                    ? 'text-[#e9c46a] hover:text-white hover:bg-[#245841] flex items-center gap-1.5'
-                    : isActive(link.path)
+                  isActive(link.path)
                     ? 'bg-[#2d6a4f] text-[#fbf9f4] font-semibold border-b-2 border-[#c8963e]'
                     : 'text-[#e2d9c8] hover:bg-[#245841] hover:text-white'
                 }`}
               >
-                {link.path === '/donate' && <Heart className="w-3.5 h-3.5 fill-[#e9c46a] text-[#e9c46a]" />}
                 <span>{link.name}</span>
               </Link>
             ))}
@@ -111,14 +107,11 @@ export const Navbar: React.FC = () => {
               to={link.path}
               onClick={() => setMobileMenuOpen(false)}
               className={`block px-3 py-2 rounded-md text-base font-medium ${
-                link.path === '/donate'
-                  ? 'text-[#e9c46a] font-semibold flex items-center gap-2'
-                  : isActive(link.path)
+                isActive(link.path)
                   ? 'bg-[#2d6a4f] text-white font-semibold'
                   : 'text-[#e2d9c8] hover:bg-[#245841] hover:text-white'
               }`}
             >
-              {link.path === '/donate' && <Heart className="w-4 h-4 fill-[#e9c46a] text-[#e9c46a]" />}
               <span>{link.name}</span>
             </Link>
           ))}
