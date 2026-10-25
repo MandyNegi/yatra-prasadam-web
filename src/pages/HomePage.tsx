@@ -37,8 +37,9 @@ export const HomePage: React.FC = () => {
           DataService.getStations(),
           DataService.getProviders({ dietary: dietaryFilters }),
         ]);
+        const visibleProviders = prvs.filter(provider => provider.availabilityStatus !== 'unavailable');
         setStations(sts);
-        setFeaturedProviders(prvs.slice(0, 4));
+        setFeaturedProviders(visibleProviders.slice(0, 4));
       } catch (err) {
         console.error('Error loading homepage data', err);
       } finally {
